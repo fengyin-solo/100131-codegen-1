@@ -3,43 +3,98 @@ from __future__ import annotations
 
 from typing import Any
 
+
+def _plant(
+    plant_id: int,
+    code: str,
+    name: str,
+    scale: str,
+    discharge: str,
+    process: str,
+    area: str,
+    online_date: str,
+    status: str,
+    *,
+    pending: bool,
+    abnormal: bool,
+    track: list[tuple[str, str, str, str, str, str]],
+) -> dict[str, Any]:
+    """按流转轨迹构造一条厂站记录，运行状态与最近经办人都从轨迹末条推导。"""
+    history = [
+        {
+            "seq": seq,
+            "time": time,
+            "operator": operator,
+            "action": action,
+            "from": frm,
+            "to": to,
+            "reason": reason,
+        }
+        for seq, (time, operator, action, frm, to, reason) in enumerate(track, start=1)
+    ]
+    last = history[-1]
+    return {
+        "id": plant_id,
+        "status": status,
+        "pending": pending,
+        "abnormal": abnormal,
+        "厂站编号": code,
+        "厂站名称": name,
+        "设计规模": scale,
+        "排放标准": discharge,
+        "处理工艺": process,
+        "服务区域": area,
+        "投运日期": online_date,
+        "运行状态": status,
+        "history": history,
+        "最近动作": last["action"],
+        "最近经办人": last["operator"],
+        "最近时间": last["time"],
+    }
+
+
+def _plank_rows() -> list[dict[str, Any]]:
+    return [
+        _plant(
+            1, "PLAN-0001", "东区水质净化厂", "2万m³/d", "一级A", "AAO+深度处理",
+            "东区街道", "", "待投运", pending=True, abnormal=False,
+            track=[
+                ("2026-09-01 09:12:30", "张建国", "登记", "", "待投运", "新建厂站资料录入"),
+            ],
+        ),
+        _plant(
+            2, "PLAN-0002", "北区污水处理厂", "5万m³/d", "一级A", "氧化沟",
+            "北区产业园", "2026-09-05", "正常运行", pending=False, abnormal=False,
+            track=[
+                ("2026-09-02 10:05:00", "张建国", "登记", "", "待投运", ""),
+                ("2026-09-05 14:20:11", "李娜", "投运", "待投运", "正常运行", "联调通过，正式并网"),
+            ],
+        ),
+        _plant(
+            3, "PLAN-0003", "南港污水处理厂", "8万m³/d", "一级A", "AAO",
+            "南港片区", "2026-08-20", "停运检修", pending=True, abnormal=True,
+            track=[
+                ("2026-08-10 08:40:00", "王强", "登记", "", "待投运", ""),
+                ("2026-08-20 09:00:00", "王强", "投运", "待投运", "正常运行", ""),
+                ("2026-09-22 16:35:47", "赵敏", "停运检修", "正常运行", "停运检修", "二沉池刮泥机故障，停机检修"),
+            ],
+        ),
+        _plant(
+            4, "PLAN-0004", "老城区污水处理厂", "1万m³/d", "一级B", "传统活性污泥法",
+            "老城区", "2022-03-15", "已退役", pending=False, abnormal=False,
+            track=[
+                ("2022-03-01 09:00:00", "陈守义", "登记", "", "待投运", ""),
+                ("2022-03-15 10:00:00", "陈守义", "投运", "待投运", "正常运行", ""),
+                ("2026-07-10 09:30:00", "周明", "停运检修", "正常运行", "停运检修", "设备老化全面检修"),
+                ("2026-07-18 15:10:00", "周明", "恢复运行", "停运检修", "正常运行", "检修完成恢复"),
+                ("2026-09-15 11:00:00", "李娜", "退役", "正常运行", "已退役", "纳入新建厂站服务范围，旧厂退役关停"),
+            ],
+        ),
+    ]
+
+
 SEED_ROWS: dict[str, list[dict[str, Any]]] = {
-    "plank": [{'id': 1,
-  'status': '待投产',
-  'pending': True,
-  'abnormal': False,
-  '厂站编号': 'PLAN-0001',
-  '厂站名称': '厂站信息样例1',
-  '设计规模': '厂站信息样例1',
-  '排放标准': '厂站信息样例1',
-  '处理工艺': '厂站信息样例1',
-  '服务区域': '厂站信息样例1',
-  '投运日期': '2026-09-01',
-  '运行状态': '厂站信息样例1'},
- {'id': 2,
-  'status': '运行中',
-  'pending': True,
-  'abnormal': True,
-  '厂站编号': 'PLAN-0002',
-  '厂站名称': '厂站信息样例2',
-  '设计规模': '厂站信息样例2',
-  '排放标准': '厂站信息样例2',
-  '处理工艺': '厂站信息样例2',
-  '服务区域': '厂站信息样例2',
-  '投运日期': '2026-09-02',
-  '运行状态': '厂站信息样例2'},
- {'id': 3,
-  'status': '停运检修',
-  'pending': False,
-  'abnormal': False,
-  '厂站编号': 'PLAN-0003',
-  '厂站名称': '厂站信息样例3',
-  '设计规模': '厂站信息样例3',
-  '排放标准': '厂站信息样例3',
-  '处理工艺': '厂站信息样例3',
-  '服务区域': '厂站信息样例3',
-  '投运日期': '2026-09-03',
-  '运行状态': '厂站信息样例3'}],
+    "plank": _plank_rows(),
     "inflow": [{'id': 1,
   'status': '正常',
   'pending': True,
