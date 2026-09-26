@@ -13,5 +13,11 @@ export const useSessionStore = defineStore('session', {
     setShift(label: string) {
       this.shiftLabel = label
     },
+    setOperator(name: string) {
+      const trimmed = name.trim()
+      if (trimmed) {
+        this.operator = trimmed
+      }
+    },
   },
 })
